@@ -8,6 +8,8 @@ var submit = document.getElementById("pr2__submit");
 var radio = document.getElementsByName("myRadio");
 var num_records;
 var records = [];
+var undoList = [];
+var redoList = [];
 
 $( document ).ready(function() {
 
@@ -88,6 +90,13 @@ function clearAll() {
 function refresh() {
   var printTable = document.getElementById('myTable');
   var numRows = printTable.rows.length;
+  var undobutton = document.getElementById("pr3__undo");
+  var redobutton = document.getElementById("pr3__redo");
+
+  if (undoList.length == 0) { undobutton.disabled = true; }
+  else { undobutton.disabled = false; }
+  if (redoList.length == 0) { redobutton.disabled = true; }
+  else { redobutton.disabled = false; }
 
   for(var i=0;i<numRows-3;i++) {
     printTable.deleteRow(3);
@@ -105,10 +114,10 @@ function refresh() {
 			firebase.database().ref('record/' + String(i)).once('value').then( function(snapshot) {
 				if (snapshot.val() != null){
 				if (snapshot.val().correct == "true") {
-					$("#myRow").after('<tr class="slim" style="color:blue"><td>' + snapshot.val().country + '</td><td>' + snapshot.val().answer + '</td><td><i class="fa fa-check" aria-hidden="true"><button type="button" onclick="deleteLog(' + records[j] + ')">Delete</button></td></tr>');
+					$("#myRow").after('<tr class="slim" style="color:blue"><td><p class="link" onmouseover="cursorPointer();" onmouseout="cursorRecover();" onclick="mapupdate(\''+ snapshot.val().country + '\');">' + snapshot.val().country + '</p></td><td>' + snapshot.val().answer + '</td><td><i class="fa fa-check" aria-hidden="true"><button type="button" onclick="deleteLog(' + records[j] + ')">Delete</button></td></tr>');
 				}
 				else {
-					$('#myRow').after('<tr onclick="mapupdate()" class="slim" style="color:red"><td>' + snapshot.val().country + '</td><td><s>' + snapshot.val().answer + '</s></td><td>' + snapshot.val().capital + '<button type="button" onclick="deleteLog(' + records[j] + ')">Delete</button></td></tr>');
+					$('#myRow').after('<tr class="slim" style="color:red"><td><p class="link" onmouseover="cursorPointer();" onmouseout="cursorRecover();" onclick="mapupdate(\''+ snapshot.val().country + '\');">' + snapshot.val().country + '</p></td><td><s>' + snapshot.val().answer + '</s></td><td>' + snapshot.val().capital + '<button type="button" onclick="deleteLog(' + records[j] + ')">Delete</button></td></tr>');
 				}
 				j++;
 			}})
@@ -120,7 +129,7 @@ function refresh() {
 			firebase.database().ref('record/' + String(i)).once('value').then( function(snapshot) {
 				if (snapshot.val() != null){
 					if (snapshot.val().correct == "true") {
-					$("#myRow").after('<tr class="slim" style="color:blue"><td>' + snapshot.val().country + '</td><td>' + snapshot.val().answer + '</td><td><i class="fa fa-check" aria-hidden="true"><button type="button" onclick="deleteLog(' + records[j] + ')">Delete</button></td></tr>');
+					$("#myRow").after('<tr class="slim" style="color:blue"><td><p class="link" onmouseover="cursorPointer();" onmouseout="cursorRecover();" onclick="mapupdate(\''+ snapshot.val().country + '\');">' + snapshot.val().country + '</p></td><td>' + snapshot.val().answer + '</td><td><i class="fa fa-check" aria-hidden="true"><button type="button" onclick="deleteLog(' + records[j] + ')">Delete</button></td></tr>');
 				}
 				j++;
 			}})
@@ -132,7 +141,7 @@ function refresh() {
 			firebase.database().ref('record/' + String(i)).once('value').then( function(snapshot) {
 				if (snapshot.val() != null){
 					if (snapshot.val().correct != "true") {
-					$('#myRow').after('<tr class="slim" style="color:red"><td>' + snapshot.val().country + '</td><td><s>' + snapshot.val().answer + '</s></td><td>' + snapshot.val().capital + '<button type="button" onclick="deleteLog(' + records[j] + ')">Delete</button></td></tr>');
+					$('#myRow').after('<tr class="slim" style="color:red"><td><p class="link" onmouseover="cursorPointer();" onmouseout="cursorRecover();" onclick="mapupdate(\''+ snapshot.val().country + '\');">' + snapshot.val().country + '</p></td><td><s>' + snapshot.val().answer + '</s></td><td>' + snapshot.val().capital + '<button type="button" onclick="deleteLog(' + records[j] + ')">Delete</button></td></tr>');
 				}
 				j++;
 			}})
@@ -142,6 +151,10 @@ function refresh() {
 
 
 function seeAnswer() {
+	firebase.database().ref('record/').once('value').then( function(snapshot) {
+		var currentState = snapshot.val();
+		write
+	}
   var state = "0";
 	for (var i=0;i<radio.length;i++){
 		if(radio[i].checked) {
@@ -161,5 +174,38 @@ function seeAnswer() {
   document.getElementById("themap").src = "https://www.google.com/maps/embed/v1/place?key=AIzaSyB6GB4fo15Q_SakG4dODpfwPaSsdLYjvrI&q=" + currentCountry.country.replace(" ", "+") +  "&maptype=satellite"
   answer.value = "";
   answer.focus();
+  undoList.push(num_records - 1);
+  redoList = [];
   refresh();
+}
+
+function mapupdate(country) {
+	document.getElementById("themap").src = "https://www.google.com/maps/embed/v1/place?key=AIzaSyB6GB4fo15Q_SakG4dODpfwPaSsdLYjvrI&q=" + country.replace(" ", "+") +  "&maptype=satellite";
+	refresh();
+}
+
+function cursorPointer() {
+	document.body.style.cursor = "pointer";
+}
+
+function cursorRecover() {
+	document.body.style.cursor = "";
+}
+
+function undo() {
+	alert("undo!");
+	var task = undoList.pop();
+	redoList.push(task);
+	// Do the Undo
+
+	refresh();
+}
+
+function redo() {
+	alert("redo!");
+	var task = redoList.pop();
+	undoList.push(task);
+	// Do the Redo
+
+	refresh();
 }
